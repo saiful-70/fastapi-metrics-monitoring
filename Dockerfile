@@ -14,8 +14,9 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and main runner
 COPY app/ ./app/
+COPY main.py ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser && \
@@ -30,4 +31,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the application
+# Using uvicorn directly for production (recommended)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
