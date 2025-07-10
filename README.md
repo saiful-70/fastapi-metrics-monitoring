@@ -21,6 +21,36 @@ The application will be available at:
 - **Health Check**: http://localhost:8000/health
 - **API Documentation**: http://localhost:8000/docs
 
+## Quick Setup Guide
+
+### Option 1: Manual Setup
+```bash
+# Clone/navigate to project
+cd fastapi-metrics-monitoring
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python3 main.py
+```
+
+### Option 2: Automated Monitoring Setup
+```bash
+# Generate complete monitoring stack
+python3 setup_monitoring.py --output-dir monitoring --email your-email@example.com
+
+# Start everything with Docker
+cd monitoring
+docker-compose -f docker-compose.monitoring.yml up -d
+```
+
+### Option 3: Docker Development
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+```
+
 ## Features
 
 - **System Metrics**: CPU usage, memory consumption, process statistics
@@ -69,6 +99,28 @@ This creates:
 - AlertManager configuration with email notifications
 - Docker Compose stack for easy deployment
 
+## Monitoring Stack Components
+
+### Prometheus Configuration
+The `setup_monitoring.py` script generates:
+- **Alerting Rules**: 12 comprehensive alerting rules for CPU, memory, errors, and performance
+- **Scrape Configuration**: Optimized for FastAPI metrics collection
+- **Data Retention**: Configurable retention policies
+
+### Grafana Dashboard
+Pre-configured dashboard includes:
+- **Request Metrics**: Rate, duration, status codes
+- **System Metrics**: CPU, memory, threads, file descriptors  
+- **Performance**: Response time percentiles and error rates
+- **Alerts**: Visual alert status and thresholds
+
+### AlertManager
+Email and webhook notifications for:
+- Critical system resource usage
+- High error rates
+- Performance degradation
+- Service availability issues
+
 ## Project Structure
 
 ```
@@ -77,10 +129,14 @@ fastapi-metrics-monitoring/
 │   ├── __init__.py
 │   ├── main.py                 # FastAPI application entry point
 │   ├── config.py              # Configuration management
+│   ├── alerting_config/        # Alerting configurations
+│   │   ├── __init__.py
+│   │   └── alerting.py        # Prometheus/Grafana alerting rules
 │   ├── metrics/
 │   │   ├── __init__.py
-│   │   ├── system_metrics.py  # CPU, memory metrics
-│   │   └── http_metrics.py    # HTTP request metrics
+│   │   ├── system_metrics.py  # CPU, memory, GC metrics
+│   │   ├── http_metrics.py    # HTTP request metrics
+│   │   └── metrics_utils.py   # Advanced metrics analysis
 │   ├── middleware/
 │   │   ├── __init__.py
 │   │   └── metrics_middleware.py
@@ -89,10 +145,12 @@ fastapi-metrics-monitoring/
 │       ├── api.py             # Business logic endpoints
 │       └── health.py          # Health check endpoints
 ├── main.py                     # Direct runner script (python3 main.py)
+├── setup_monitoring.py        # Monitoring setup automation
 ├── requirements.txt
 ├── README.md
 ├── docker-compose.yml
 ├── prometheus.yml
+├── .gitignore
 └── Dockerfile
 ```
 
@@ -129,6 +187,33 @@ fastapi-metrics-monitoring/
    - `python-multipart==0.0.6`
    - `pydantic==2.5.0`
    - `pydantic-settings==2.1.0`
+
+### Testing the Installation
+
+```bash
+# Test the application is working
+curl http://localhost:8000/
+
+# Test metrics endpoint
+curl http://localhost:8000/metrics
+
+# Test health check
+curl http://localhost:8000/health/detailed
+
+# Test enhanced metrics
+curl http://localhost:8000/metrics/health-score
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FASTAPI_METRICS_DEBUG` | `false` | Enable debug mode |
+| `FASTAPI_METRICS_HOST` | `localhost` | Server host |
+| `FASTAPI_METRICS_PORT` | `8000` | Server port |
+| `FASTAPI_METRICS_METRICS_COLLECTION_INTERVAL` | `5` | Metrics collection interval (seconds) |
+| `FASTAPI_METRICS_SYSTEM_METRICS_INTERVAL` | `10` | System metrics interval (seconds) |
+| `FASTAPI_METRICS_ENABLE_SYSTEM_METRICS` | `true` | Enable system metrics collection |
 
 ## Configuration
 
@@ -429,6 +514,18 @@ mypy app/
 4. Add tests for new functionality
 5. Ensure all tests pass
 6. Submit a pull request
+
+## Summary
+
+This FastAPI Metrics Monitoring System provides:
+
+✅ **24 Comprehensive Metrics** - System, HTTP, and application metrics  
+✅ **Production-Ready Monitoring** - Prometheus, Grafana, AlertManager integration  
+✅ **Automated Setup** - One-command deployment of complete monitoring stack  
+✅ **Real-time Analytics** - Health scoring, trend analysis, and performance monitoring  
+✅ **Enterprise Features** - Alerting, dashboards, and comprehensive observability  
+
+Perfect for production FastAPI applications requiring comprehensive monitoring and observability.
 
 ## License
 
