@@ -30,6 +30,45 @@ The application will be available at:
 - **RESTful API**: Sample data management endpoints with full CRUD operations
 - **Production Ready**: Built with scalability and monitoring in mind
 
+## Enhanced Features
+
+### Advanced Metrics Collection
+
+- **Standard Prometheus Metrics**: Implements official Prometheus process metrics naming conventions
+- **Garbage Collection Statistics**: Tracks GC collections, collected objects, and uncollectable objects by generation
+- **Enhanced HTTP Metrics**: Comprehensive request tracking with status code classification and error categorization
+- **Request Rate Calculations**: Built-in rate calculation functions similar to Prometheus `rate()` function
+- **Performance Percentiles**: Real-time calculation of response time percentiles (50th, 95th, 99th)
+- **Alert Thresholds**: Configurable alerting thresholds for system resources and application metrics
+
+### Comprehensive Monitoring Endpoints
+
+- `GET /metrics/prometheus-queries` - Example Prometheus queries for monitoring
+- `GET /metrics/health-score` - Overall system health score (0-100)
+- `GET /metrics/alerts` - Current alert conditions and thresholds
+- `GET /metrics/trends` - Performance trends and recommendations
+- `GET /metrics/export` - Complete metrics export for external systems
+- `GET /config/alerting` - Alerting configuration for Prometheus and Grafana
+
+### Monitoring Setup Automation
+
+Run the monitoring setup script to automatically generate configurations:
+
+```bash
+# Generate monitoring configuration
+python3 setup_monitoring.py --output-dir monitoring_config --target-host localhost --target-port 8000 --email admin@example.com
+
+# Start complete monitoring stack
+cd monitoring_config
+docker-compose -f docker-compose.monitoring.yml up -d
+```
+
+This creates:
+- Prometheus configuration with alerting rules
+- Grafana dashboard with comprehensive panels
+- AlertManager configuration with email notifications
+- Docker Compose stack for easy deployment
+
 ## Project Structure
 
 ```
@@ -164,27 +203,35 @@ uvicorn app.main:app --host localhost --port 8000 --workers 4
 
 | Metric Name | Type | Description |
 |-------------|------|-------------|
-| `app_cpu_seconds_total` | Counter | Total CPU time consumed by the application |
+| `process_cpu_seconds_total` | Counter | Total user and system CPU time spent in seconds |
+| `process_resident_memory_bytes` | Gauge | Resident memory size in bytes |
+| `process_virtual_memory_bytes` | Gauge | Virtual memory size in bytes |
+| `process_start_time_seconds` | Gauge | Start time of the process since unix epoch in seconds |
+| `process_open_fds` | Gauge | Number of open file descriptors |
 | `app_cpu_usage_percent` | Gauge | Current CPU usage percentage |
-| `app_memory_resident_bytes` | Gauge | Physical memory currently used |
-| `app_memory_virtual_bytes` | Gauge | Virtual memory allocated |
 | `app_memory_usage_percent` | Gauge | Memory usage percentage |
-| `app_start_time_seconds` | Gauge | Application start time since unix epoch |
-| `app_open_fds` | Gauge | Number of open file descriptors |
 | `app_threads_total` | Gauge | Number of OS threads |
 | `app_uptime_seconds` | Gauge | Time since application started |
 | `app_info` | Info | Application process information |
+| `gc_collections_total` | Counter | Total garbage collections by generation |
+| `gc_collected_objects_total` | Counter | Total objects collected during GC by generation |
+| `gc_uncollectable_objects_total` | Counter | Total uncollectable objects found by generation |
+| `memory_alert_threshold_bytes` | Gauge | Memory usage threshold for alerting |
+| `cpu_alert_threshold_percent` | Gauge | CPU usage threshold for alerting |
 
 ### HTTP Metrics
 
 | Metric Name | Type | Description | Labels |
 |-------------|------|-------------|--------|
-| `http_requests_total` | Counter | Total HTTP requests | method, endpoint, status_code |
+| `http_requests_total` | Counter | Total HTTP requests | method, endpoint, status_code, handler |
 | `http_request_duration_seconds` | Histogram | Request duration | method, endpoint |
 | `http_request_size_bytes` | Histogram | Request size | method, endpoint |
 | `http_response_size_bytes` | Histogram | Response size | method, endpoint, status_code |
 | `http_requests_active` | Gauge | Active requests | - |
-| `http_request_errors_total` | Counter | Request errors | method, endpoint, error_type |
+| `http_request_errors_total` | Counter | Request errors | method, endpoint, error_type, status_code |
+| `http_requests_by_status_total` | Counter | Requests by status code class | status_class, method |
+| `http_request_rate_per_second` | Gauge | Request rate per second | - |
+| `http_slow_requests_total` | Counter | Slow requests (>1s) | method, endpoint |
 
 ## Monitoring Queries
 
@@ -200,14 +247,44 @@ rate(http_requests_total[5m])
 histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
 ```
 
-**Error Rate:**
+**Error Rate Percentage:**
 ```promql
-rate(http_request_errors_total[5m]) / rate(http_requests_total[5m])
+rate(http_request_errors_total[5m]) / rate(http_requests_total[5m]) * 100
 ```
 
 **CPU Usage Rate:**
 ```promql
-rate(app_cpu_seconds_total[5m])
+rate(process_cpu_seconds_total[5m])
+```
+
+**Memory Usage in MB:**
+```promql
+process_resident_memory_bytes / 1024 / 1024
+```
+
+**Status Code Distribution:**
+```promql
+sum(rate(http_requests_total[5m])) by (status_code)
+```
+
+**Slow Request Rate:**
+```promql
+rate(http_slow_requests_total[5m])
+```
+
+**Garbage Collection Rate:**
+```promql
+rate(gc_collections_total[5m])
+```
+
+**Request Throughput per Minute:**
+```promql
+rate(http_requests_total[1m]) * 60
+```
+
+**Active Requests vs Load Threshold:**
+```promql
+http_requests_active / 100
 ```
 
 ## Docker Deployment

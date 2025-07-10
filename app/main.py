@@ -147,6 +147,83 @@ async def metrics_endpoint() -> Response:
     )
 
 
+@app.get("/metrics/prometheus-queries")
+async def prometheus_queries() -> Dict[str, Any]:
+    """
+    Get example Prometheus queries for rate calculations
+    
+    Returns:
+        Example PromQL queries for monitoring
+    """
+    from .metrics.metrics_utils import metrics_analyzer
+    
+    return {
+        "description": "Example Prometheus queries for monitoring this application",
+        "queries": metrics_analyzer.get_prometheus_rate_examples(),
+        "usage": {
+            "cpu_rate_5m": "Shows CPU usage rate over 5 minutes - use for alerting on high CPU",
+            "request_rate_5m": "Shows request rate over 5 minutes - use for traffic monitoring",
+            "error_rate_5m": "Shows error rate percentage - use for service health monitoring",
+            "p95_response_time": "Shows 95th percentile response time - use for performance monitoring"
+        }
+    }
+
+
+@app.get("/metrics/health-score")
+async def health_score() -> Dict[str, Any]:
+    """
+    Get comprehensive health score based on all metrics
+    
+    Returns:
+        Health score and component analysis
+    """
+    from .metrics.metrics_utils import metrics_analyzer
+    
+    return metrics_analyzer.calculate_system_health_score()
+
+
+@app.get("/metrics/alerts")
+async def alerts_status() -> Dict[str, Any]:
+    """
+    Get current alert conditions and thresholds
+    
+    Returns:
+        Active alerts, warnings, and current metric values
+    """
+    from .metrics.metrics_utils import metrics_analyzer
+    
+    return metrics_analyzer.get_alert_conditions()
+
+
+@app.get("/metrics/trends")
+async def performance_trends(window_minutes: int = 5) -> Dict[str, Any]:
+    """
+    Get performance trends over a time window
+    
+    Args:
+        window_minutes: Time window in minutes (default: 5)
+    
+    Returns:
+        Performance trend analysis and recommendations
+    """
+    from .metrics.metrics_utils import metrics_analyzer
+    
+    return metrics_analyzer.get_performance_trends(window_minutes)
+
+
+@app.get("/metrics/export")
+async def export_metrics() -> Dict[str, Any]:
+    """
+    Export comprehensive metrics summary for external systems
+    
+    Returns:
+        Complete metrics export including system, HTTP, alerts, and health data
+    """
+    from .metrics.metrics_utils import metrics_analyzer
+    
+    return metrics_analyzer.export_metrics_summary()
+
+
 @app.get("/metrics/summary")
 async def metrics_summary() -> Dict[str, Any]:
     """
@@ -167,6 +244,28 @@ async def metrics_summary() -> Dict[str, Any]:
             "name": settings.app_name,
             "version": settings.app_version,
             "uptime_seconds": time.time() - system_metrics.start_time
+        }
+    }
+
+
+@app.get("/config/alerting")
+async def get_alerting_config() -> Dict[str, Any]:
+    """
+    Get alerting configuration for Prometheus and Grafana
+    
+    Returns:
+        Alerting rules, dashboard config, and setup instructions
+    """
+    from .alerting_config.alerting import get_alerting_rules, get_grafana_dashboard, get_alertmanager_config
+    
+    return {
+        "prometheus_alerting_rules": get_alerting_rules(),
+        "grafana_dashboard": get_grafana_dashboard(),
+        "alertmanager_config": get_alertmanager_config(),
+        "setup_instructions": {
+            "prometheus_alerts": "Save the alerting rules to a .yml file and reference it in prometheus.yml under rule_files",
+            "grafana_dashboard": "Import the dashboard JSON in Grafana UI or save to provisioning/dashboards/",
+            "alertmanager": "Configure AlertManager with the provided config for notifications"
         }
     }
 
